@@ -281,10 +281,6 @@
         {
             Categories.Add(Category.Name);
         }
-        //foreach (var auction in db.Auctions.Include(a => a.Author).Include(b => b.bids))
-        //{
-        //    auctions.Add(auction);
-        //}
         Categories.Add("Top 10");
         Categories.Add("Všechno");
         client = (await AuthStat).User;

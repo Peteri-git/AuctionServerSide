@@ -1,0 +1,24 @@
+﻿@page "/accountant"
+@inject ApplicationDbContext db
+@using AuctionServerSide.Models
+@attribute [Authorize(Roles = "admin,accountant")]
+<MatSelectItem @bind-Value="selectedUser" Items="@db.Users.ToArray()">
+    <ItemTemplate>
+        <span>@context?.Email</span>
+    </ItemTemplate>
+</MatSelectItem>
+<MatTextField @bind-Value="@balance">Počet korun</MatTextField>
+<MatButton OnClick="ChangeBalance">Přidat peníze</MatButton>
+
+@code {
+    ApplicationUser selectedUser;
+    string balance;
+    public void ChangeBalance()
+    {
+        if (selectedUser != null)
+        {
+            selectedUser.AccountBalance += Convert.ToInt32(balance);
+            db.SaveChanges();
+        }
+    }
+}

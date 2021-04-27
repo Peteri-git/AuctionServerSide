@@ -1,0 +1,34 @@
+﻿@page "/category"
+@inject ApplicationDbContext db
+@attribute [Authorize(Roles ="admin")]
+
+<MatTextField @bind-Value="@CategoryName" Label="Jméno kategorie"></MatTextField>
+<MatSelectItem @bind-Value="@selectedCat" Items="db.Categories.ToArray()">
+    <ItemTemplate>
+        <span>@context?.Name</span>
+    </ItemTemplate>
+</MatSelectItem>
+<MatButton OnClick="@CreateCategory">Přídat kategorii</MatButton>
+@code {
+    string CategoryName;
+    Data.Category selectedCat;
+    public void CreateCategory()
+    {
+        if (CategoryName != "")
+        {
+            Data.Category ct = new Data.Category();
+            if (selectedCat == null)
+            {
+                ct.Name = CategoryName;
+                db.Categories.Add(ct);
+            }
+            else
+            {
+                ct.Name = CategoryName;
+                ct.ParentCategory = selectedCat;
+                db.Categories.Add(ct);
+            }
+            db.SaveChanges();
+        }
+    }
+}

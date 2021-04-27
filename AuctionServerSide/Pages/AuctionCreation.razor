@@ -1,0 +1,137 @@
+﻿@page "/auctionCreation"
+@using System.IO;
+@using AuctionServerSide.Models;
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Identity
+@inject ApplicationDbContext db
+@inject UserManager<ApplicationUser> userManager
+@attribute [Authorize(Roles = "client,admin")]
+<MatTextField @bind-Value="@AuctionName">Jméno aukce</MatTextField>
+<br />
+<MatSelectItem @bind-Value="@selectedCat" Items="db.Categories.ToArray()">
+    <ItemTemplate>
+        <span>@context?.Name</span>
+    </ItemTemplate>
+</MatSelectItem>
+<br />
+<MatTextField @bind-Value="@description" Dense="true" TextArea="true" FullWidth="true">Popis</MatTextField>
+<br />
+<MatFileUpload OnChange="@FilesReady" Label="Drop a single file here or Browse"></MatFileUpload>
+<br />
+<MatTextField @bind-Value="@startingPrice">Začinající cena</MatTextField>
+<br />
+<MatTextField @bind-Value="@address">Adresa</MatTextField>
+<br />
+<MatRadioGroup @bind-Value="@TypeOfBid" Items="@TypesOfBid"></MatRadioGroup>
+<br />
+<MatDatePicker EnableTime="true" @bind-Value="@endDate"></MatDatePicker>
+<br />
+<MatTextField @bind-Value="minimalBid"></MatTextField>
+<br />
+<MatButton OnClick="@CreateAuction">Vytvořit Aukci</MatButton>
+<br />
+<h1>Nezaplacený Aukce</h1>
+@foreach (var auction in db.Auctions.Include(a => a.Author))
+{
+    if (auction.Author.Email == username && auction.publicationPrice != 0)
+    {
+        <MatCard class="demo-mat-card">
+            <MatCardContent>
+                <MatCardMedia Wide="true" ImageUrl="C:\Users\Petr\source\repos\AuctionServerSide\AuctionServerSide\wwwroot\Reelo1.jpg"></MatCardMedia>
+                <div class="demo-mat-card-content">
+                    <MatHeadline6 class="demo-mat-card-clean-margin">
+                        @auction.Name
+                    </MatHeadline6>
+                    <MatHeadline5 class="demo-mat-card-clean-margin">
+                            @auction.Author.Email
+                        </MatHeadline5>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.address
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.startingPrice.ToString() CZK
+                    </MatSubtitle1>
+                </div>
+
+                <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                    @auction.description
+                </MatBody2>
+            </MatCardContent>
+            <MatCardActions>
+                <MatButton OnClick="() => PublicationPayment(auction)">Zaplatit</MatButton>
+            </MatCardActions>
+        </MatCard>
+    }
+}
+@code {
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; }
+    string AuctionName;
+    string description;
+    DateTime endDate;
+    string startingPrice;
+    string TypeOfBid;
+    string address;
+    string minimalBid;
+    byte[] photo;
+    string username;
+    ClaimsPrincipal client;
+    Data.Category selectedCat;
+    string[] TypesOfBid =
+    {
+        "Procentuálně",
+        "Určitý počet korun"
+    };
+    public void PublicationPayment(Auction auction)
+    {
+        if (userManager.GetUserAsync(client).Result.AccountBalance >= auction.publicationPrice)
+        {
+            auction.publicationPrice = 0;
+            db.SaveChanges();
+        }
+    }
+
+    void FilesReady(IMatFileUploadEntry[] files)
+    {
+        foreach (var file in files)
+        {
+            using (var ms = new MemoryStream())
+            {
+                //file.Save(ms, System.Drawing.Imaging.ImageFormat.Gif);
+                file.WriteToStreamAsync(ms);
+                using (var reader = new StreamReader(ms))
+                {
+                    photo = Convert.FromBase64String(reader.ReadToEndAsync().Result);
+                }
+            }
+        }
+    }
+    void CreateAuction()
+    {
+        Auction auc = new Auction();
+        foreach (var user in db.Users)
+        {
+            if (user.Email == username)
+            {
+                auc.Author = user;
+            }
+        }
+
+        auc.Name = AuctionName;
+        auc.publicationPrice = 300;
+        auc.category = selectedCat;
+        auc.description = description;
+        auc.startingPrice = Convert.ToInt32(startingPrice);
+        auc.TypeOfBid = TypeOfBid;
+        auc.address = address;
+        auc.minimalBid = Convert.ToInt32(minimalBid);
+        auc.photo = photo;
+        auc.endDate = endDate;
+        db.Auctions.Add(auc);
+        db.SaveChanges();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        username = (await AuthStat).User.Identity.Name;
+        client = (await AuthStat).User;
+    }
+}

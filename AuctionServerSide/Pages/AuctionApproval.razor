@@ -1,0 +1,44 @@
+﻿@page "/auctionApproval"
+@inject ApplicationDbContext db
+@attribute [Authorize(Roles = "admin,supervisor")]
+
+
+@foreach (var auction in db.Auctions.Include(a => a.Author))
+{
+    if (auction.publicationPrice == 0 && auction.publicationDate.ToString() == "01.01.0001 0:00:00")
+    {
+        <MatCard class="demo-mat-card">
+            <MatCardContent>
+                <MatCardMedia Wide="true" ImageUrl="C:\Users\Petr\source\repos\AuctionServerSide\AuctionServerSide\wwwroot\Reelo1.jpg"></MatCardMedia>
+                <div class="demo-mat-card-content">
+                    <MatHeadline6 class="demo-mat-card-clean-margin">
+                        @auction.Name
+                    </MatHeadline6>
+                    <MatHeadline5 class="demo-mat-card-clean-margin">
+                            @auction.Author.Email
+                        </MatHeadline5>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.address
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.startingPrice.ToString() CZK
+                    </MatSubtitle1>
+                </div>
+
+                <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                    @auction.description
+                </MatBody2>
+            </MatCardContent>
+            <MatCardActions>
+                <MatButton OnClick="() => ApproveAuction(auction)">Schválit</MatButton>
+            </MatCardActions>
+        </MatCard>
+    }
+}
+@code {
+    public void ApproveAuction(Auction auction)
+    {
+        auction.publicationDate = DateTime.Now;
+        db.SaveChanges();
+    }
+}

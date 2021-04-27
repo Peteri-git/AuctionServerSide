@@ -1,0 +1,314 @@
+﻿@page "/"
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Identity
+@using AuctionServerSide.Models;
+@inject ApplicationDbContext db
+@inject UserManager<ApplicationUser> userManager
+@inject IJSRuntime JS;
+@attribute [Authorize(Roles = "client,admin")]
+
+<MatSelectItem @bind-Value="@selectedCat" Items="Categories">
+    <ItemTemplate>
+        <span>@context</span>
+    </ItemTemplate>
+</MatSelectItem>
+@foreach (var auction in db.Auctions.Include(a => a.Author).Include(b => b.bids).Include(c => c.category))
+{
+    if (auction.publicationPrice == 0 && auction.publicationDate.ToString() != "01.01.0001 0:00:00" && selectedCat == "Všechno")
+    {
+        <MatCard class="demo-mat-card">
+            <MatCardContent>
+                <MatCardMedia Wide="true" ImageUrl="C:\Users\Petr\source\repos\AuctionServerSide\AuctionServerSide\wwwroot\Reelo1.jpg"></MatCardMedia>
+                <div class="demo-mat-card-content">
+                    <MatHeadline6 class="demo-mat-card-clean-margin">
+                        @auction.Name
+                    </MatHeadline6>
+                    <MatHeadline5 class="demo-mat-card-clean-margin">
+                        @auction.Author.Email
+                    </MatHeadline5>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.address
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @if (auction.bids.Count == 0)
+                        {
+                            @auction.startingPrice.ToString()
+                        }
+                        else
+                        {
+                            @auction.bids[auction.bids.Count - 1].currentPrice.ToString();
+                        }
+                        CZK
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.RemainigTime.ToString(@"dd\:hh\:mm\:ss")
+                    </MatSubtitle1>
+                </div>
+
+                <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                    @auction.description
+                </MatBody2>
+            </MatCardContent>
+            <MatCardActions>
+                <MatButton OnClick="() => OpenDialog(auction)">Přihodit</MatButton>
+            </MatCardActions>
+        </MatCard>
+    }
+    if (auction.publicationPrice == 0 && auction.publicationDate.ToString() != "01.01.0001 0:00:00" && selectedCat == auction.category.Name)
+    {
+        <MatCard class="demo-mat-card">
+            <MatCardContent>
+                <MatCardMedia Wide="true" ImageUrl="C:\Users\Petr\source\repos\AuctionServerSide\AuctionServerSide\wwwroot\Reelo1.jpg"></MatCardMedia>
+                <div class="demo-mat-card-content">
+                    <MatHeadline6 class="demo-mat-card-clean-margin">
+                        @auction.Name
+                    </MatHeadline6>
+                    <MatHeadline5 class="demo-mat-card-clean-margin">
+                        @auction.Author.Email
+                    </MatHeadline5>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.address
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @if (auction.bids.Count == 0)
+                        {
+                            @auction.startingPrice.ToString()
+                        }
+                        else
+                        {
+                            @auction.bids[auction.bids.Count - 1].currentPrice.ToString();
+                        }
+                        CZK
+                    </MatSubtitle1>
+                    <MatSubtitle1 class="demo-mat-card-clean-margin">
+                        @auction.RemainigTime.ToString(@"dd\:hh\:mm\:ss")
+                    </MatSubtitle1>
+                </div>
+
+                <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                    @auction.description
+                </MatBody2>
+            </MatCardContent>
+            <MatCardActions>
+                <MatButton OnClick="() => OpenDialog(auction)">Přihodit</MatButton>
+            </MatCardActions>
+        </MatCard>
+    }
+}
+@if (selectedCat == "Top 10")
+{
+    int index = 0;
+    foreach (var auction in db.Auctions.Include(a => a.Author).Include(b => b.bids).Include(c => c.category).OrderBy(t => t.RemainigTime))
+    {
+        if (auction.publicationPrice == 0 && auction.publicationDate.ToString() != "01.01.0001 0:00:00" && index < 10)
+        {
+            <MatCard class="demo-mat-card">
+                <MatCardContent>
+                    <MatCardMedia Wide="true" ImageUrl="C:\Users\Petr\source\repos\AuctionServerSide\AuctionServerSide\wwwroot\Reelo1.jpg"></MatCardMedia>
+                    <div class="demo-mat-card-content">
+                        <MatHeadline6 class="demo-mat-card-clean-margin">
+                            @auction.Name
+                        </MatHeadline6>
+                        <MatHeadline5 class="demo-mat-card-clean-margin">
+                            @auction.Author.Email
+                        </MatHeadline5>
+                        <MatSubtitle1 class="demo-mat-card-clean-margin">
+                            @auction.address
+                        </MatSubtitle1>
+                        <MatSubtitle1 class="demo-mat-card-clean-margin">
+                            @if (auction.bids.Count == 0)
+                            {
+                                @auction.startingPrice.ToString()
+                            }
+                            else
+                            {
+                                @auction.bids[auction.bids.Count - 1].currentPrice.ToString();
+                            }
+                            CZK
+                        </MatSubtitle1>
+                        <MatSubtitle1 class="demo-mat-card-clean-margin">
+                            @auction.RemainigTime.ToString(@"dd\:hh\:mm\:ss")
+                        </MatSubtitle1>
+                    </div>
+
+                    <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                        @auction.description
+                    </MatBody2>
+                </MatCardContent>
+                <MatCardActions>
+                    <MatButton OnClick="() => OpenDialog(auction)">Přihodit</MatButton>
+                </MatCardActions>
+            </MatCard>
+        }
+        index++;
+        if (index == 10)
+        {
+            index = 0;
+            break;
+        }
+    }
+}
+<MatDialog @bind-IsOpen="@dialogIsOpen">
+    <MatDialogTitle>Hi</MatDialogTitle>
+    <MatDialogContent>
+        <MatTextField @bind-Value="bidAmount"></MatTextField>
+    </MatDialogContent>
+    <MatDialogActions>
+        <MatButton OnClick="@(e => { selectedAuction = null; dialogIsOpen = false; })">No Thanks</MatButton>
+        <MatButton OnClick="OkClick">OK</MatButton>
+    </MatDialogActions>
+</MatDialog>
+@code{
+    [CascadingParameter] protected Task<AuthenticationState> AuthStat { get; set; }
+    string bidAmount;
+    string selectedCat = "Všechno";
+    List<string> Categories = new List<string>();
+    List<Auction> auctions = new List<Auction>();
+    bool dialogIsOpen = false;
+    Auction selectedAuction;
+    ClaimsPrincipal client;
+    void OpenDialog(Auction auc)
+    {
+        dialogIsOpen = true;
+        selectedAuction = auc;
+    }
+    async void OkClick()
+    {
+        var user = await userManager.GetUserAsync(client);
+        if (selectedAuction.TypeOfBid == "Určitý počet korun")
+        {
+            if (user.AccountBalance >= Convert.ToInt32(bidAmount) && Convert.ToInt32(bidAmount) >= selectedAuction.minimalBid)
+            {
+                Bid newBid = new Bid();
+                newBid.auction = selectedAuction;
+                newBid.bidAmount = Convert.ToInt32(bidAmount);
+                newBid.bidDate = DateTime.Now;
+                newBid.user = user;
+                if (selectedAuction.bids.Count == 0)
+                {
+                    newBid.currentPrice = selectedAuction.startingPrice + Convert.ToInt32(bidAmount);
+                }
+                else
+                {
+                    newBid.currentPrice = selectedAuction.bids.Last().currentPrice + Convert.ToInt32(bidAmount);
+                }
+                user.AccountBalance -= Convert.ToInt32(bidAmount);
+                db.Add(newBid);
+                db.SaveChanges();
+                dialogIsOpen = false;
+                selectedAuction = null;
+            }
+            else if (user.AccountBalance < Convert.ToInt32(bidAmount))
+            {
+                await JS.InvokeAsync<string>("alert", "Nemáš dost peněz");
+            }
+            else if (Convert.ToInt32(bidAmount) < selectedAuction.minimalBid)
+            {
+                await JS.InvokeAsync<string>("alert", "Minimální příhoz je " + selectedAuction.minimalBid);
+            }
+        }
+        else if (selectedAuction.TypeOfBid == "Procentuálně")
+        {
+            if (selectedAuction.bids.Count == 0)
+            {
+                if (user.AccountBalance >= Convert.ToInt32(bidAmount) && Convert.ToInt32(bidAmount) >= (float)selectedAuction.startingPrice * (1f + ((float)selectedAuction.minimalBid / 100)))
+                {
+                    Bid newBid = new Bid();
+                    newBid.auction = selectedAuction;
+                    newBid.bidAmount = Convert.ToInt32(bidAmount);
+                    newBid.bidDate = DateTime.Now;
+                    newBid.user = user;
+                    if (selectedAuction.bids.Count == 0)
+                    {
+                        newBid.currentPrice = selectedAuction.startingPrice + Convert.ToInt32(bidAmount);
+                    }
+                    else
+                    {
+                        newBid.currentPrice = selectedAuction.bids.Last().currentPrice + Convert.ToInt32(bidAmount);
+                    }
+                    user.AccountBalance -= Convert.ToInt32(bidAmount);
+                    db.Add(newBid);
+                    db.SaveChanges();
+                    dialogIsOpen = false;
+                    selectedAuction = null;
+                }
+                else if (user.AccountBalance < Convert.ToInt32(bidAmount))
+                {
+                    await JS.InvokeAsync<string>("alert", "Nemáš dost peněz");
+                }
+                else if (Convert.ToInt32(bidAmount) < selectedAuction.startingPrice * (1 + (float)selectedAuction.minimalBid / 100))
+                {
+                    await JS.InvokeAsync<string>("alert", "Minimální příhoz je " + selectedAuction.startingPrice * (1 + (float)selectedAuction.minimalBid / 100));
+                }
+            }
+            else
+            {
+                if (user.AccountBalance >= Convert.ToInt32(bidAmount) && Convert.ToInt32(bidAmount) >= (float)selectedAuction.bids.Last().currentPrice * (1f + ((float)selectedAuction.minimalBid / 100)))
+                {
+                    Bid newBid = new Bid();
+                    newBid.auction = selectedAuction;
+                    newBid.bidAmount = Convert.ToInt32(bidAmount);
+                    newBid.bidDate = DateTime.Now;
+                    newBid.user = user;
+                    if (selectedAuction.bids.Count == 0)
+                    {
+                        newBid.currentPrice = selectedAuction.startingPrice + Convert.ToInt32(bidAmount);
+                    }
+                    else
+                    {
+                        newBid.currentPrice = selectedAuction.bids.Last().currentPrice + Convert.ToInt32(bidAmount);
+                    }
+                    user.AccountBalance -= Convert.ToInt32(bidAmount);
+                    db.Add(newBid);
+                    db.SaveChanges();
+                    dialogIsOpen = false;
+                    selectedAuction = null;
+                }
+                else if (user.AccountBalance < Convert.ToInt32(bidAmount))
+                {
+                    await JS.InvokeAsync<string>("alert", "Nemáš dost peněz");
+                }
+                else if (Convert.ToInt32(bidAmount) < (float)selectedAuction.bids.Last().currentPrice*(1+(float)selectedAuction.minimalBid/100))
+                {
+                    await JS.InvokeAsync<string>("alert", "Minimální příhoz je " + (float)selectedAuction.bids.Last().currentPrice * (1 + ((float)selectedAuction.minimalBid / 100)));
+                }
+            }
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var Category in db.Categories)
+        {
+            Categories.Add(Category.Name);
+        }
+        //foreach (var auction in db.Auctions.Include(a => a.Author).Include(b => b.bids))
+        //{
+        //    auctions.Add(auction);
+        //}
+        Categories.Add("Top 10");
+        Categories.Add("Všechno");
+        client = (await AuthStat).User;
+        foreach (var auction in db.Auctions.Include(a => a.Author).Include(b => b.bids).Include(c => c.category))
+        {
+            auction.RemainigTime = auction.endDate - DateTime.Now;
+            StopWatch(auction);
+        }
+    }
+    async Task StopWatch(Auction auction)
+    {
+        while (auction.RemainigTime.Days >= 0 && auction.RemainigTime.Hours >= 0 && auction.RemainigTime.Minutes >= 0 && auction.RemainigTime.Seconds >= 0)
+        {
+            await Task.Delay(1000);
+            auction.RemainigTime = auction.RemainigTime.Add(new TimeSpan(0, 0, -1));
+            StateHasChanged();
+        }
+        RemoveAuction(auction);
+    }
+    void RemoveAuction(Auction auction)
+    {
+        db.Auctions.Remove(auction);
+        auctions.Remove(auction);
+        db.SaveChanges();
+        StateHasChanged();
+    }
+}

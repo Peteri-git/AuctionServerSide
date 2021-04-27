@@ -1,0 +1,30 @@
+﻿@page "/userRoles"
+@attribute [Authorize(Roles = "admin")]
+@using Microsoft.AspNetCore.Identity
+@using AuctionServerSide.Models
+@inject UserManager<ApplicationUser> _userManager
+@inject ApplicationDbContext db
+
+<MatSelectItem @bind-Value="@userSelect" Items="@db.Users.ToArray()">
+    <ItemTemplate>
+        <span>@context?.Email</span>
+    </ItemTemplate>
+</MatSelectItem>
+<MatSelectItem @bind-Value="itemSelect" Items="@db.Roles.ToArray()">
+<ItemTemplate>
+    <span>@context?.Name</span>
+</ItemTemplate>
+    </MatSelectItem>
+<MatButton OnClick="async () => await ChangeRole()">Změnit roli</MatButton>
+
+@code {
+    ApplicationUser userSelect;
+    IdentityRole itemSelect;
+    public async Task ChangeRole()
+    {
+        if (userSelect != null && itemSelect !=null)
+        {
+            await _userManager.AddToRoleAsync(userSelect, itemSelect.Name);
+        }
+    }
+}
